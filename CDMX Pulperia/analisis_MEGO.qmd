@@ -1,0 +1,95 @@
+---
+title: "Analisis Abarrotes CDMX"
+format: docx
+editor: visual
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+
+library(tidyverse)
+library(sf)
+library(openxlsx)
+library(gt)
+
+setwd("C:/Users/steph/Documents/GitHub/Independent-Work/CDMX Pulperia")
+
+abrrts <- read.xlsx("abrrts_analisis.xlsx")
+
+
+```
+
+## Ranking de Alcaldias
+
+```{r}
+
+abrrts %>% 
+  group_by(Alcaldía) %>% 
+  summarise(
+    avg_telefono = mean(Telefono_binary, na.rm = TRUE),
+    avg_correo = mean(Correo_binary, na.rm = TRUE),
+    avg_website = mean(Pagina_binary, na.rm = TRUE),
+    avg_count = mean(Count_non_missing_percentage, na.rm = TRUE) / 100,
+    PEA = as.numeric(first(PEA)) / 100,  # Convert to numeric and divide by 100
+    Ingresos = as.numeric(first(ingresos))  # Convert ingresos to numeric if needed
+  ) %>%
+  arrange(desc(avg_count)) %>%  # Sort by PEA in descending order
+  gt() %>%
+  tab_header(
+    title = "Resumen de Accesibilidad Digital por Alcaldía",
+    subtitle = "Promedios de disponibilidad de contacto y variables socioeconómicas"
+  ) %>%
+  cols_label(
+    Alcaldía = "Alcaldía",
+    avg_telefono = "Teléfono (%)",
+    avg_correo = "Correo (%)",
+    avg_website = "Página Web (%)",
+    avg_count = "Promedio de Comunicación (%)",
+    PEA = "PEA (%)",
+    Ingresos = "Ingresos Promedio"
+  ) %>%
+  fmt_percent(
+    columns = c(avg_telefono, avg_correo, avg_website, avg_count, PEA),
+    decimals = 2
+  ) %>%
+  fmt_number(
+    columns = c(Ingresos),
+    decimals = 2,
+    use_seps = TRUE
+  ) %>%
+  tab_options(
+    table.font.size = "medium",
+    heading.align = "center"
+  )
+
+```
+
+
+```{r}
+
+shapefile_data_alcadias <- st_read("poligonos_alcaldias_cdmx.shp")
+shapefile_data_colonias <- st_read("poligonos_colonias_cdmx.shp")
+
+# Plot the shapefile using ggplot2
+ggplot(data = shapefile_data_alcadias) +
+  geom_sf(fill = "lightblue", color = "black") +
+  labs(
+    title = "Polígonos de las Alcaldías de CDMX",
+    subtitle = "Mapa básico de las alcaldías",
+  ) +
+  theme_minimal()
+
+ggplot(data = shapefile_data_colonias) +
+  geom_sf(fill = "lightblue", color = "black") +
+  labs(
+    title = "Polígonos de las Alcaldías de CDMX",
+    subtitle = "Mapa básico de las alcaldías",
+  ) +
+  theme_minimal()
+
+
+```
+

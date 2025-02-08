@@ -41,7 +41,7 @@ colnames(comercio) <- as.character(unlist(comercio[1, ]))
 comercio_clean <- comercio[-1, ]
 
 comercio_trim <- comercio_clean %>% 
-  slice(-1:-20)
+  slice(-1:-16)
 
 comercio_trim<- comercio_trim %>% 
   select(desc_municipio,indicador,`2008`,`2018`)
@@ -62,3 +62,14 @@ pulperia <- pulperia %>%
     Pagina_binary = ifelse(!is.na(`Págiona.web`) & `Págiona.web` != "", 1, 0),
     Count_non_missing_percentage = (`Telefono_binary` + `Correo_binary` + `Pagina_binary`) / 3 * 100
   )
+
+glimpse(pulperia)
+
+pulperia_trim <- pulperia %>% 
+  select(nom_estab, Alcaldía,Telefono_binary, Correo_binary, Pagina_binary, Count_non_missing_percentage, latitud, longitud)
+
+pulperia_end <- left_join(pulperia_trim, PEA, join_by(Alcaldía == desc_municipio))
+
+pulperia_end <- left_join(pulperia_end, comercio_trim, join_by(Alcaldía == desc_municipio))
+
+write.xlsx(pulperia_end,"abrrts_analisis.xlsx")
