@@ -2,7 +2,7 @@ library(tidyverse)
 library(sf)
 
 #Set working directory
-setwd("C:/Users/steph/Documents/GitHub/Independent-Work/CDMX Pulperia")
+setwd("M:/p/GitHub/Independent Work/CDMX Pulperia")
 
 pulperia <- read.xlsx("pulperias.xlsx", sheet = 2)
 empleos <- read.xlsx("empleo_09.xlsx")
@@ -63,10 +63,8 @@ pulperia <- pulperia %>%
     Count_non_missing_percentage = (`Telefono_binary` + `Correo_binary` + `Pagina_binary`) / 3 * 100
   )
 
-glimpse(pulperia)
-
 pulperia_trim <- pulperia %>% 
-  select(nom_estab, Alcaldía,Telefono_binary, Correo_binary, Pagina_binary, Count_non_missing_percentage, latitud, longitud)
+  select(nom_estab, Alcaldía,Telefono,Telefono_binary, Correo_binary, Pagina_binary, Count_non_missing_percentage, latitud, longitud)
 
 pulperia_end <- left_join(pulperia_trim, PEA, join_by(Alcaldía == desc_municipio))
 

@@ -1,0 +1,131 @@
+---
+title: "Analisis Abarrotes CDMX v2"
+format: 
+  html:
+    self-contained: true
+editor: visual
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+
+
+# Load necessary libraries
+suppressWarnings({
+  suppressMessages({
+    library(tidyverse)
+    library(gt)
+    library(openxlsx)
+  })
+})
+
+# Load the dataset
+setwd("M:/p/GitHub/Independent Work/CDMX Pulperia")
+abrrts <- read.xlsx("abrrts_analisis.xlsx")
+
+# Prepare the summary table
+summary_data <- abrrts %>%
+  group_by(Alcaldía) %>%
+  summarise(
+    avg_telefono = mean(Telefono_binary, na.rm = TRUE),
+    avg_correo = mean(Correo_binary, na.rm = TRUE),
+    avg_website = mean(Pagina_binary, na.rm = TRUE),
+    avg_count = mean(Count_non_missing_percentage, na.rm = TRUE) / 100,
+    PEA = as.numeric(first(PEA)) / 100,
+    Ingresos = as.numeric(first(ingresos))
+  ) %>%
+  arrange(desc(PEA))
+
+# Prepare detailed phone data
+details_data <- abrrts %>%
+  select(Alcaldía, nom_estab, Telefono) %>%
+  filter(!is.na(Telefono))
+
+
+```
+
+## Resumen de Accesibilidad Digital por Alcaldía
+
+```{r}
+
+# Create the main table with clickable Alcaldía links
+summary_data %>%
+  mutate(
+    Alcaldía = paste0(
+      "<a href='#' onclick=\"showDetails('", Alcaldía, "')\">",
+      Alcaldía,
+      "</a>"
+    )
+  ) %>%
+  gt() %>%
+  tab_header(
+    title = "Resumen de Accesibilidad Digital por Alcaldía",
+    subtitle = "Promedios de disponibilidad de contacto y variables socioeconómicas"
+  ) %>%
+  cols_label(
+    Alcaldía = "Alcaldía",
+    avg_telefono = "Teléfono (%)",
+    avg_correo = "Correo (%)",
+    avg_website = "Página Web (%)",
+    avg_count = "Promedio de Comunicación (%)",
+    PEA = "PEA (%)",
+    Ingresos = "Ingresos Promedio"
+  ) %>%
+  fmt_percent(
+    columns = c(avg_telefono, avg_correo, avg_website, avg_count, PEA),
+    decimals = 2
+  ) %>%
+  fmt_number(
+    columns = c(Ingresos),
+    decimals = 2,
+    use_seps = TRUE
+  ) %>%
+  tab_options(
+    table.font.size = "medium",
+    heading.align = "center"
+  )
+
+```
+
+## Detalles de Teléfonos por Alcaldía
+
+```{r}
+
+# Render individual detail tables for each Alcaldía
+details_data %>%
+  group_by(Alcaldía) %>%
+  group_map(~ {
+    alcaldia_name <- .y$Alcaldía[1]
+    table <- .x %>%
+      select(Negocio = nom_estab, Telefono) %>%
+      gt() %>%
+      tab_header(
+        title = paste("Teléfonos para", alcaldia_name)
+      ) %>%
+      as_raw_html()
+    
+    # Wrap each detail table in a div with a unique ID
+    cat(sprintf("<div id='details-%s' class='details' style='display:none;'>%s</div>", alcaldia_name, table))
+  })
+
+```
+
+```{r}
+
+# JavaScript for interactivity
+cat("
+<script>
+  function showDetails(alcaldia) {
+    // Hide all detail sections
+    document.querySelectorAll('.details').forEach(el => el.style.display = 'none');
+    // Show the selected detail section
+    document.getElementById('details-' + alcaldia).style.display = 'block';
+  }
+</script>
+")
+
+```
+
